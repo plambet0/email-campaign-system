@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Put, Delete, Body, Param } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { TestCampaignDto } from './dto/test-campaign.dto';
 
 @Controller('campaigns')
 export class CampaignsController {
@@ -32,6 +33,12 @@ export class CampaignsController {
   async resendCampaign(@Param('id') id: string) {
     await this.campaignsService.resendCampaign(id);
     return { message: 'Campaign resending started' };
+  }
+
+  @Post(':id/test')
+  async sendTestEmail(@Param('id') id: string, @Body() body: TestCampaignDto) {
+    await this.campaignsService.sendTestEmail(id, body.email);
+    return { message: `Test email sent to ${body.email}` };
   }
 
   @Get()

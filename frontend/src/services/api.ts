@@ -38,6 +38,11 @@ export const campaignAPI = {
     await api.post(`/campaigns/${campaignId}/resend`);
   },
 
+  // Send test email for a campaign
+  sendTestEmail: async (campaignId: string, email: string): Promise<void> => {
+    await api.post(`/campaigns/${campaignId}/test`, { email });
+  },
+
   // Get all campaigns
   getCampaigns: async (): Promise<Campaign[]> => {
     const response = await api.get('/campaigns');

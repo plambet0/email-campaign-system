@@ -3,6 +3,8 @@ export interface Campaign {
   name: string;
   emails: string[];
   htmlTemplate: string;
+  /** Where customer replies go (Reply-To header) */
+  replyTo?: string;
   smtpConfig: SmtpConfig;
   status: 'pending' | 'running' | 'completed' | 'failed';
   createdAt: Date;

@@ -30,6 +30,10 @@ export class CreateCampaignDto {
   @IsNotEmpty()
   htmlTemplate: string;
 
+  @IsEmail()
+  @IsNotEmpty()
+  replyTo: string;
+
   @IsObject()
   smtpConfig: SmtpConfigDto;
 }

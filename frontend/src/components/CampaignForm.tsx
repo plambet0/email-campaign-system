@@ -18,6 +18,7 @@ const CampaignForm: React.FC = () => {
     name: '',
     emails: [],
     htmlTemplate: '',
+    replyTo: '',
     smtpConfig: {
       host: 'smtp.gmail.com',
       port: 587,
@@ -136,6 +137,7 @@ const CampaignForm: React.FC = () => {
         name: campaign.name,
         emails: campaign.emails,
         htmlTemplate: campaign.htmlTemplate,
+        replyTo: campaign.replyTo || '',
         smtpConfig: campaign.smtpConfig,
       });
       setEmailsText(campaign.emails.join('\n'));
@@ -249,6 +251,16 @@ const CampaignForm: React.FC = () => {
       return false;
     }
 
+    if (!formData.replyTo.trim()) {
+      toast.error('Моля въведете Reply-To имейл за отговорите');
+      return false;
+    }
+
+    if (!emailRegex.test(formData.replyTo.trim())) {
+      toast.error('Невалиден Reply-To имейл адрес');
+      return false;
+    }
+
     if (!formData.smtpConfig.host.trim()) {
       toast.error('Моля въведете SMTP хост');
       return false;
@@ -314,9 +326,9 @@ const CampaignForm: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="space-y-8">
         {/* Form Section */}
-        <div className="space-y-8">
+        <div className="max-w-3xl space-y-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Campaign Details */}
             <div className="card">
@@ -411,6 +423,32 @@ const CampaignForm: React.FC = () => {
                   <p>• <code>{'{{unsubscribe_url}}'}</code> - ще бъде заменен с линк за отписване</p>
                   <p><strong>GDPR:</strong> Ако не добавите линк за отписване, той ще бъде добавен автоматично.</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Reply-To */}
+            <div className="card">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Mail className="w-5 h-5 mr-2" />
+                Отговори (Reply-To)
+              </h3>
+              <div className="form-group">
+                <label htmlFor="replyTo" className="form-label">
+                  Имейл за отговори *
+                </label>
+                <input
+                  type="email"
+                  id="replyTo"
+                  name="replyTo"
+                  value={formData.replyTo}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="напр. bethome@gmail.com"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Когато клиент натисне Reply, отговорът идва на този адрес (независимо от SMTP From).
+                </p>
               </div>
             </div>
 
@@ -517,10 +555,10 @@ const CampaignForm: React.FC = () => {
           </form>
         </div>
 
-        {/* Preview Section */}
+        {/* Preview Section — full width so 600px email templates are not clipped */}
         {showPreview && (
-          <div className="space-y-4">
-            <div className="card">
+          <div className="w-full space-y-4">
+            <div className="card overflow-visible">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900 flex items-center">
                   <Eye className="w-5 h-5 mr-2" />
@@ -535,12 +573,12 @@ const CampaignForm: React.FC = () => {
                 </button>
               </div>
               
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-visible">
                 <div className="bg-gray-100 px-4 py-2 border-b text-sm text-gray-600">
                   Preview - Test Email ({formData.emails.length > 0 ? formData.emails[0] : 'example@domain.com'})
                 </div>
                 <div 
-                  className="p-4 max-h-96 overflow-auto bg-white"
+                  className="bg-gray-100 email-preview-content"
                   dangerouslySetInnerHTML={{ 
                     __html: getPreviewHtml() 
                   }}

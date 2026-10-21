@@ -48,7 +48,8 @@
 
   /* Preview specific styles */
   .email-preview {
-    @apply border rounded-lg overflow-hidden bg-white;
+    @apply border rounded-lg bg-white;
+    overflow: visible;
   }
   
   .email-preview-header {
@@ -56,21 +57,13 @@
   }
   
   .email-preview-content {
-    @apply max-h-96 overflow-auto;
+    overflow: visible;
+    max-height: none;
+    width: 100%;
   }
-  
-  /* Reset styles for email preview to prevent conflicts */
-  .email-preview-content * {
-    max-width: 100% !important;
-  }
-  
-  .email-preview-content img {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-  
+
+  /* Keep email tables at their natural width (typically 600px) */
   .email-preview-content table {
-    max-width: 100% !important;
-    table-layout: auto !important;
+    max-width: none;
   }
 }

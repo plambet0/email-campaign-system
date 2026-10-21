@@ -32,6 +32,7 @@ export class CampaignsService {
       name: createCampaignDto.name,
       emails: validEmails,
       htmlTemplate: createCampaignDto.htmlTemplate,
+      replyTo: createCampaignDto.replyTo.trim().toLowerCase(),
       smtpConfig: createCampaignDto.smtpConfig,
       status: 'pending',
       createdAt: new Date(),
@@ -65,6 +66,10 @@ export class CampaignsService {
 
     if (updateData.htmlTemplate) {
       campaign.htmlTemplate = updateData.htmlTemplate;
+    }
+
+    if (updateData.replyTo) {
+      campaign.replyTo = updateData.replyTo.trim().toLowerCase();
     }
 
     if (updateData.smtpConfig) {
@@ -143,6 +148,65 @@ export class CampaignsService {
     await this.sendCampaign(id);
   }
 
+  async sendTestEmail(campaignId: string, testEmail: string): Promise<void> {
+    const email = testEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new BadRequestException('Invalid test email address');
+    }
+
+    const campaign = await this.databaseService.getCampaignById(campaignId);
+    if (!campaign) {
+      throw new BadRequestException('Campaign not found');
+    }
+
+    if (campaign.status === 'running') {
+      throw new BadRequestException('Cannot send test email while campaign is running');
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: campaign.smtpConfig.host,
+      port: campaign.smtpConfig.port,
+      secure: campaign.smtpConfig.port === 465,
+      auth: {
+        user: campaign.smtpConfig.user,
+        pass: campaign.smtpConfig.pass,
+      },
+    });
+
+    const trackingId = uuidv4();
+    const unsubscribeToken = uuidv4();
+
+    const trackingPixel: TrackingPixel = {
+      id: trackingId,
+      campaignId: campaign.id,
+      email,
+      opened: false,
+    };
+    await this.databaseService.saveTrackingPixel(trackingPixel);
+
+    const processedHtml = emailUtils.processEmailTemplate(
+      campaign.htmlTemplate,
+      email,
+      trackingId,
+      unsubscribeToken,
+      process.env.BACKEND_URL || 'http://localhost:3001'
+    );
+
+    const subject =
+      emailUtils.extractSubjectFromTemplate(campaign.htmlTemplate) || 'Email Campaign';
+
+    await transporter.sendMail({
+      from: campaign.smtpConfig.user,
+      replyTo: campaign.replyTo || campaign.smtpConfig.user,
+      to: email,
+      subject,
+      html: processedHtml,
+    });
+
+    console.log(`✅ Test email sent for campaign ${campaign.name} to ${email}`);
+  }
+
   async sendCampaign(campaignId: string): Promise<void> {
     console.log('🚀 Starting campaign send process...');
     console.log('Campaign ID:', campaignId);
@@ -214,9 +278,10 @@ export class CampaignsService {
             process.env.BACKEND_URL || 'http://localhost:3001'
           );
 
-          // Send email
+          // Send email — replies go to replyTo when set
           const result = await transporter.sendMail({
             from: campaign.smtpConfig.user,
+            replyTo: campaign.replyTo || campaign.smtpConfig.user,
             to: email,
             subject: emailUtils.extractSubjectFromTemplate(campaign.htmlTemplate) || 'Email Campaign',
             html: processedHtml,
